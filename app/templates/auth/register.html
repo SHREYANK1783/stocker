@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>Register</h1>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Register</h2>
+    <form method="post">
+        <label for="email">Email</label>
+        <input name="email" id="email" type="email" required>
+
+        <label for="password">Password</label>
+        <input name="password" id="password" type="password" required>
+
+        <button type="submit">Register</button>
+    </form>
+    <div style="margin-top: 1rem; text-align: center; font-size: 0.875rem;">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a>
+    </div>
+</div>
+{% endblock %}

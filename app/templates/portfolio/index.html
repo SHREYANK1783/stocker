@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Portfolio{% endblock %}
+
+{% block header %}
+<h1>My Portfolio</h1>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h2>Portfolio Summary</h2>
+    <div class="card" style="max-width: none; margin: 0; display: inline-block;">
+        <p style="margin: 0; font-size: 1.25rem; color: var(--text);">Total Value</p>
+        <p style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: bold; color: var(--primary);">${{
+            "%.2f"|format(total_value) }}</p>
+    </div>
+</div>
+
+<div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 2px solid var(--border);">
+                <th style="padding: 1rem;">Symbol</th>
+                <th style="padding: 1rem;">Shares</th>
+                <th style="padding: 1rem;">Current Price</th>
+                <th style="padding: 1rem;">Total Value</th>
+                <th style="padding: 1rem;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in portfolio %}
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 1rem; font-weight: bold;">{{ item['symbol'] }}</td>
+                <td style="padding: 1rem;">{{ item['quantity'] }}</td>
+                <td style="padding: 1rem;">${{ "%.2f"|format(item['current_price']) }}</td>
+                <td style="padding: 1rem;">${{ "%.2f"|format(item['value']) }}</td>
+                <td style="padding: 1rem;">
+                    <form action="{{ url_for('orders.place') }}" method="POST"
+                        style="display: inline-block; margin: 0; flex-direction: row;">
+                        <input type="hidden" name="symbol" value="{{ item['symbol'] }}">
+                        <input type="hidden" name="price" value="{{ item['current_price'] }}">
+                        <input type="hidden" name="type" value="sell">
+                        <input type="number" name="quantity" min="1" max="{{ item['quantity'] }}" value="1"
+                            style="width: 60px; margin-bottom: 0; margin-right: 0.5rem;" required>
+                        <button type="submit"
+                            style="background-color: var(--danger); padding: 0.25rem 0.5rem;">Sell</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="padding: 2rem; text-align: center; color: #6b7280;">You don't own any stocks yet.
+                    <a href="{{ url_for('dashboard.index') }}">Go to Dashboard</a> to buy some.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block header %}
+<h1>Dashboard</h1>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h2>Market Overview</h2>
+    <p>Welcome, {{ g.user['email'] }}</p>
+
+    <div style="margin-bottom: 1rem;">
+        <input type="text" id="searchInput" placeholder="Search stocks..."
+            style="width: 100%; max-width: 400px; padding: 0.5rem; display: inline-block; margin-bottom: 0;">
+        <button onclick="searchStocks()" style="margin-left: 0.5rem;">Search</button>
+    </div>
+</div>
+
+<div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 2px solid var(--border);">
+                <th style="padding: 1rem;">Symbol</th>
+                <th style="padding: 1rem;">Company Name</th>
+                <th style="padding: 1rem;">Price</th>
+                <th style="padding: 1rem;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="stocksTableBody">
+            {% for stock in stocks %}
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 1rem; font-weight: bold;">{{ stock['symbol'] }}</td>
+                <td style="padding: 1rem;">{{ stock['name'] }}</td>
+                <td style="padding: 1rem;">${{ stock['price'] }}</td>
+                <td style="padding: 1rem;">
+                    <form action="/orders/place" method="POST"
+                        style="display: inline-block; margin: 0; flex-direction: row;">
+                        <input type="hidden" name="symbol" value="{{ stock['symbol'] }}">
+                        <input type="hidden" name="price" value="{{ stock['price'] }}">
+                        <input type="hidden" name="type" value="buy">
+                        <input type="number" name="quantity" min="1" value="1"
+                            style="width: 60px; margin-bottom: 0; margin-right: 0.5rem;" required>
+                        <button type="submit"
+                            style="background-color: var(--success); padding: 0.25rem 0.5rem;">Buy</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    async function searchStocks() {
+        const query = document.getElementById('searchInput').value;
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        const tbody = document.getElementById('stocksTableBody');
+        tbody.innerHTML = '';
+
+        data.forEach(stock => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid var(--border)';
+
+            tr.innerHTML = `
+      <td style="padding: 1rem; font-weight: bold;">${stock.symbol}</td>
+      <td style="padding: 1rem;">${stock.name}</td>
+      <td style="padding: 1rem;">$${stock.price}</td>
+      <td style="padding: 1rem;">
+        <form action="/orders/place" method="POST" style="display: inline-block; margin: 0; flex-direction: row;">
+          <input type="hidden" name="symbol" value="${stock.symbol}">
+          <input type="hidden" name="price" value="${stock.price}">
+          <input type="hidden" name="type" value="buy">
+          <input type="number" name="quantity" min="1" value="1" style="width: 60px; margin-bottom: 0; margin-right: 0.5rem;" required>
+          <button type="submit" style="background-color: var(--success); padding: 0.25rem 0.5rem;">Buy</button>
+        </form>
+      </td>
+    `;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+{% endblock %}

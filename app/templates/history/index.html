@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction History{% endblock %}
+
+{% block header %}
+<h1>Transaction History</h1>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h2>Your Recent Transactions</h2>
+</div>
+
+<div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 2px solid var(--border);">
+                <th style="padding: 1rem;">Date</th>
+                <th style="padding: 1rem;">Type</th>
+                <th style="padding: 1rem;">Symbol</th>
+                <th style="padding: 1rem;">Quantity</th>
+                <th style="padding: 1rem;">Price</th>
+                <th style="padding: 1rem;">Total Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr style="border-bottom: 1px solid var(--border);">
+                <!-- We use the timestamp string, but we can format it if needed -->
+                <td style="padding: 1rem;">{{ tx['timestamp'][:19].replace('T', ' ') }}</td>
+                <td style="padding: 1rem;">
+                    {% if tx['type'] == 'buy' %}
+                    <span style="color: var(--success); font-weight: bold;">BUY</span>
+                    {% else %}
+                    <span style="color: var(--danger); font-weight: bold;">SELL</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; font-weight: bold;">{{ tx['symbol'] }}</td>
+                <td style="padding: 1rem;">{{ tx['quantity'] }}</td>
+                <td style="padding: 1rem;">${{ "%.2f"|format(tx['price_at_execution']|float) }}</td>
+                <td style="padding: 1rem; font-weight: bold;">
+                    {% set total = (tx['quantity']|int) * (tx['price_at_execution']|float) %}
+                    {% if tx['type'] == 'buy' %}
+                    <span style="color: var(--danger);">-${{ "%.2f"|format(total) }}</span>
+                    {% else %}
+                    <span style="color: var(--success);">+${{ "%.2f"|format(total) }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="padding: 2rem; text-align: center; color: #6b7280;">You haven't made any
+                    transactions yet. <a href="{{ url_for('dashboard.index') }}">Go to Dashboard</a> to start trading.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
