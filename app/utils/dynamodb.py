@@ -1,80 +1,66 @@
 import uuid
-from flask import current_app
-from boto3.dynamodb.conditions import Key, Attr
-from botocore.exceptions import ClientError
+import datetime
 
-def get_table(table_name):
-    return current_app.dynamodb.Table(table_name)
+# --- MOCK LOCAL DATABASE ---
+MOCK_DB = {
+    'Users': {},
+    'Stocks': {},
+    'Portfolios': {},
+    'Transactions': {}
+}
 
 # --- USERS ---
 
 def get_user_by_email(email):
-    table = get_table('Users')
-    response = table.query(
-        IndexName='email-index',
-        KeyConditionExpression=Key('email').eq(email)
-    )
-    items = response.get('Items', [])
-    return items[0] if items else None
+    for u in MOCK_DB['Users'].values():
+        if u['email'] == email:
+            return u
+    return None
 
 def get_user_by_id(user_id):
-    table = get_table('Users')
-    response = table.get_item(Key={'user_id': user_id})
-    return response.get('Item')
+    return MOCK_DB['Users'].get(user_id)
 
 def create_user(email, password_hash):
-    table = get_table('Users')
     user_id = str(uuid.uuid4())
     user = {
         'user_id': user_id,
         'email': email,
         'password_hash': password_hash
     }
-    table.put_item(Item=user)
+    MOCK_DB['Users'][user_id] = user
     return user
 
 # --- STOCKS ---
 
 def get_all_stocks():
-    table = get_table('Stocks')
-    response = table.scan()
-    return response.get('Items', [])
+    return list(MOCK_DB['Stocks'].values())
 
 def get_stock(symbol):
-    table = get_table('Stocks')
-    response = table.get_item(Key={'symbol': symbol})
-    return response.get('Item')
+    return MOCK_DB['Stocks'].get(symbol)
 
 # --- PORTFOLIOS ---
 
 def get_portfolio(user_id):
-    table = get_table('Portfolios')
-    response = table.query(
-        KeyConditionExpression=Key('user_id').eq(user_id)
-    )
-    return response.get('Items', [])
+    return [p for p in MOCK_DB['Portfolios'].values() if p['user_id'] == user_id]
 
 def get_portfolio_item(user_id, symbol):
-    table = get_table('Portfolios')
-    response = table.get_item(Key={'user_id': user_id, 'symbol': symbol})
-    return response.get('Item')
+    key = f"{user_id}_{symbol}"
+    return MOCK_DB['Portfolios'].get(key)
 
 def update_portfolio(user_id, symbol, quantity_change):
-    table = get_table('Portfolios')
-    
-    # Needs to handle atomicity using ADD or update if it exists
+    key = f"{user_id}_{symbol}"
     item = get_portfolio_item(user_id, symbol)
     new_quantity = (item['quantity'] if item else 0) + quantity_change
     
     if new_quantity > 0:
-        table.put_item(Item={
+        MOCK_DB['Portfolios'][key] = {
             'user_id': user_id,
             'symbol': symbol,
             'quantity': new_quantity
-        })
+        }
     elif new_quantity == 0:
         if item:
-            table.delete_item(Key={'user_id': user_id, 'symbol': symbol})
+            del MOCK_DB['Portfolios'][key]
     else:
         raise ValueError("Not enough shares to sell.")
     
@@ -83,8 +69,6 @@ def update_portfolio(user_id, symbol, quantity_change):
 # --- TRANSACTIONS ---
 
 def create_transaction(user_id, symbol, tx_type, quantity, price):
-    table = get_table('Transactions')
-    import datetime
     txn_id = str(uuid.uuid4())
     timestamp = datetime.datetime.utcnow().isoformat()
     
@@ -94,19 +78,13 @@ def create_transaction(user_id, symbol, tx_type, quantity, price):
         'symbol': symbol,
         'type': tx_type,  # 'buy' or 'sell'
         'quantity': quantity,
-        'price_at_execution': str(price),  # DynamoDB handles Decimal, but storing float as str is safer
+        'price_at_execution': str(price),
         'timestamp': timestamp
     }
-    table.put_item(Item=item)
+    MOCK_DB['Transactions'][txn_id] = item
     return item
 
 def get_transactions(user_id):
-    table = get_table('Transactions')
-    response = table.query(
-        IndexName='user_id-index',
-        KeyConditionExpression=Key('user_id').eq(user_id)
-    )
-    # Sort by timestamp descending
-    items = response.get('Items', [])
+    items = [t for t in MOCK_DB['Transactions'].values() if t['user_id'] == user_id]
     items.sort(key=lambda x: x['timestamp'], reverse=True)
     return items
