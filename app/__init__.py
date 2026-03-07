@@ -38,6 +38,10 @@ def create_app(test_config=None):
     from .auth import bp as auth_bp
     app.register_blueprint(auth_bp)
     
+    from .auth.google_oauth import google_bp, bp as google_auth_local_bp
+    app.register_blueprint(google_bp, url_prefix="/login")
+    app.register_blueprint(google_auth_local_bp)
+    
     from .dashboard import bp as dashboard_bp
     app.register_blueprint(dashboard_bp)
     
